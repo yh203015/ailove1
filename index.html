@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>给你的小惊喜 · 有声版</title>
+    <title>给你的小惊喜 · 本地音乐版</title>
     <style>
         * {
             margin: 0;
@@ -14,6 +14,7 @@
             background: linear-gradient(to bottom, #0a0e27, #1a1a2e);
             font-family: "Microsoft Yahei", sans-serif;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
@@ -61,29 +62,35 @@
             flex-direction: column;
             gap: 20px;
             z-index: 10;
+            width: 100%;
+            max-width: 300px;
         }
-        .start-btn, .sound-btn {
+        .file-btn, .start-btn {
             border: none;
-            padding: 18px 40px;
+            padding: 18px 20px;
             border-radius: 50px;
-            font-size: 20px;
+            font-size: 18px;
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(255, 94, 151, 0.4);
             transition: 0.3s;
             color: white;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .file-btn {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
         }
         .start-btn {
             background: linear-gradient(135deg, #ff5e97, #ff9a8b);
         }
-        .sound-btn {
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-        }
-        .start-btn:hover, .sound-btn:hover {
-            transform: scale(1.1);
+        .file-btn:hover, .start-btn:hover {
+            transform: scale(1.05);
             box-shadow: 0 12px 25px rgba(255, 94, 151, 0.5);
         }
-        .sound-btn:disabled {
-            opacity: 0.7;
+        .file-btn:disabled, .start-btn:disabled {
+            opacity: 0.6;
             transform: none;
             cursor: default;
         }
@@ -101,6 +108,7 @@
             white-space: nowrap;
             border: 1px solid rgba(255,255,255,0.3);
             backdrop-filter: blur(5px);
+            pointer-events: none;
         }
         @keyframes bubble-float {
             0% {
@@ -112,118 +120,114 @@
                 transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1);
             }
         }
-        /* 提示信息（可选） */
+        /* 提示 */
         .hint {
             color: rgba(255,255,255,0.5);
             text-align: center;
-            margin-top: 10px;
+            margin-top: 15px;
             font-size: 14px;
+        }
+        /* 隐藏的文件输入 */
+        #fileInput {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="btn-group">
-        <button class="sound-btn" id="soundBtn">🎵 开启声音</button>
-        <button class="start-btn" id="startBtn">💌 点我，有惊喜</button>
-        <div class="hint">✨ 先点击「开启声音」，再点惊喜按钮</div>
+        <!-- 自定义文件选择按钮 -->
+        <button class="file-btn" id="fileBtn">🎵 选择音乐文件</button>
+        <button class="start-btn" id="startBtn" disabled>💌 点我，有惊喜</button>
+        <div class="hint">✨ 先点击上方按钮选择你下载的MP3</div>
     </div>
 
-    <!-- 背景音乐（使用稳定且允许跨域的测试音乐） -->
-    <audio id="bgMusic" loop preload="auto">
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-        <!-- 备用音频格式，提升兼容性 -->
-        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.ogg" type="audio/ogg">
-        您的浏览器不支持 audio 元素。
-    </audio>
-
-    <!-- 烟花爆炸音效（直接使用可靠音效） -->
+    <!-- 音频元素（背景音乐 + 爆炸音效） -->
+    <audio id="bgMusic" loop preload="auto"></audio>
     <audio id="boomSound" preload="auto">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-firework-explosion-2759.mp3" type="audio/mpeg">
-        <source src="https://assets.mixkit.co/sfx/preview/mixkit-firework-explosion-2759.ogg" type="audio/ogg">
     </audio>
 
     <script>
         (function() {
+            const fileBtn = document.getElementById('fileBtn');
             const startBtn = document.getElementById('startBtn');
-            const soundBtn = document.getElementById('soundBtn');
+            const fileInput = document.createElement('input'); // 动态创建文件输入
+            fileInput.type = 'file';
+            fileInput.accept = 'audio/*'; // 只允许选择音频文件
+            fileInput.id = 'fileInput';
+            fileInput.style.display = 'none';
+            document.body.appendChild(fileInput);
+
             const bgMusic = document.getElementById('bgMusic');
             const boomSound = document.getElementById('boomSound');
             
-            // 鲜艳的粒子颜色
             const colors = ['#ff5e97', '#ffd700', '#00ffff', '#ff6347', '#32cd32', '#ff69b4', '#ff4500', '#9400d3'];
-            // 表白文字
             const messages = [
                 "其实我喜欢你很久了。",
                 "不是一时兴起，是认真的、慢慢的、越来越深的喜欢。",
                 "我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。"
             ];
-            
-            let soundEnabled = false;      // 声音是否已启用
-            let musicReady = false;        // 音乐是否已准备好（用于避免重复加载）
-            let boomReady = false;          // 爆炸音效是否已准备好
 
-            // --- 辅助函数：尝试解锁音频（某些浏览器需要用户手势后立马播放/暂停来激活）---
-            function unlockAudio(audioElement) {
-                if (!audioElement) return;
-                // 尝试播放并立即暂停，这会激活音频上下文
-                audioElement.play().then(() => {
-                    audioElement.pause();
-                    audioElement.currentTime = 0;
-                    console.log('音频已解锁:', audioElement.id);
-                }).catch(e => {
-                    // 静默失败，用户点击惊喜按钮时再试即可
-                    console.warn('音频解锁失败（将在后续重试）:', e);
-                });
-            }
+            let musicSelected = false;      // 是否已选择音乐
+            let musicUrl = null;            // 存储临时URL，用于释放
 
-            // --- 开启声音按钮 ---
-            soundBtn.addEventListener('click', function() {
-                // 防止重复点击
-                if (soundEnabled) return;
-
-                // 标记声音已开启
-                soundEnabled = true;
-                soundBtn.textContent = '✅ 声音已开启';
-                soundBtn.disabled = true;
-
-                // 预加载音频（浏览器会开始下载）
-                bgMusic.load();
-                boomSound.load();
-
-                // 关键步骤：尝试解锁两个音频（用户手势后立即尝试播放/暂停）
-                unlockAudio(bgMusic);
-                unlockAudio(boomSound);
-
-                // 也可以显式监听是否可以播放
-                bgMusic.addEventListener('canplaythrough', () => {
-                    musicReady = true;
-                }, { once: true });
-                boomSound.addEventListener('canplaythrough', () => {
-                    boomReady = true;
-                }, { once: true });
+            // 点击“选择音乐文件”按钮，触发隐藏的文件选择
+            fileBtn.addEventListener('click', function() {
+                fileInput.click();
             });
 
-            // --- 主惊喜按钮 ---
+            // 当用户选择了文件
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // 检查是否是音频
+                if (!file.type.startsWith('audio/')) {
+                    alert('请选择一个音频文件（如MP3）');
+                    return;
+                }
+
+                // 释放之前选择的文件URL（如果有）
+                if (musicUrl) {
+                    URL.revokeObjectURL(musicUrl);
+                }
+
+                // 创建新的对象URL
+                musicUrl = URL.createObjectURL(file);
+                
+                // 设置背景音乐源
+                bgMusic.src = musicUrl;
+                
+                // 标记已选择
+                musicSelected = true;
+                fileBtn.textContent = `✅ 已选择：${file.name.substring(0, 12)}...`; // 显示文件名前12个字符
+                fileBtn.disabled = true;     // 禁止再次选择（可选，你可以放开）
+                startBtn.disabled = false;    // 启用惊喜按钮
+
+                // 可选：预加载音乐
+                bgMusic.load();
+                
+                // 提示用户
+                document.querySelector('.hint').textContent = '🎉 音乐已就绪，点击“点我”开始！';
+            });
+
+            // 点击“点我”按钮
             startBtn.addEventListener('click', function() {
-                // 隐藏两个按钮
+                if (!musicSelected) {
+                    alert('请先选择音乐文件');
+                    return;
+                }
+
+                // 隐藏按钮
+                fileBtn.style.display = 'none';
                 startBtn.style.display = 'none';
-                soundBtn.style.display = 'none';
-                // 同时隐藏提示文字
                 document.querySelector('.hint').style.display = 'none';
 
-                // 如果已开启声音，播放背景音乐
-                if (soundEnabled) {
-                    // 播放音乐（如果尚未播放且已准备好）
-                    bgMusic.play().catch(err => {
-                        console.warn('背景音乐播放失败，可能是未解锁或加载问题，稍后重试:', err);
-                        // 尝试静默重试一次（延迟一秒）
-                        setTimeout(() => {
-                            bgMusic.play().catch(e => console.warn('重试失败:', e));
-                        }, 1000);
-                    });
-
-                    // 也可以顺便确保爆炸音效已解锁（但爆炸时还会单独播放）
-                }
+                // 播放背景音乐（必须由用户手势触发）
+                bgMusic.play().catch(err => {
+                    console.warn('音乐播放失败', err);
+                    alert('音乐播放失败，请稍后重试');
+                });
 
                 // 生成文字气泡
                 createBubbles();
@@ -237,58 +241,44 @@
                 }, 3000);
             });
 
-            // --- 发射烟花：轨迹 + 爆炸 ---
+            // 发射烟花（与之前相同）
             function launchFirework() {
-                // 随机从左下或右下发射
                 const startX = Math.random() > 0.5 ? 60 : window.innerWidth - 60;
                 const startY = window.innerHeight - 30;
-                // 爆炸点随机在屏幕上半部分
                 const explodeX = startX + (Math.random() - 0.5) * 500;
                 const explodeY = window.innerHeight * 0.2 + Math.random() * 150;
 
-                // 创建上升轨迹
                 const trail = document.createElement('div');
                 trail.classList.add('trail');
                 trail.style.left = startX + 'px';
-                trail.style.bottom = '30px';   // 从底部往上
+                trail.style.bottom = '30px';
                 trail.style.height = '0';
                 document.body.appendChild(trail);
 
-                // 轨迹结束后爆炸
                 setTimeout(() => {
-                    if (trail.parentNode) trail.remove();  // 移除轨迹
-                    explode(explodeX, explodeY);           // 生成爆炸粒子
+                    if (trail.parentNode) trail.remove();
+                    explode(explodeX, explodeY);
                     
-                    // 播放爆炸音效（如果已开启声音）
-                    if (soundEnabled) {
-                        // 克隆爆炸音效节点以支持快速连续播放（避免同一实例被中断）
-                        const boomClone = boomSound.cloneNode(true);
-                        boomClone.volume = 0.6;  // 避免太吵
-                        boomClone.play().catch(err => {
-                            console.log('爆炸音效播放失败（可能未解锁），尝试原节点', err);
-                            // 降级：使用原节点播放
-                            boomSound.currentTime = 0;
-                            boomSound.volume = 0.6;
-                            boomSound.play().catch(e => console.warn('原爆炸音效也失败:', e));
-                        });
-                        
-                        // 自动清理克隆节点（播放完成后移除）
-                        boomClone.addEventListener('ended', () => {
-                            boomClone.remove();
-                        });
-                        // 保险：10秒后移除
-                        setTimeout(() => boomClone.remove(), 10000);
-                    }
-                }, 1500);  // 与动画时长匹配
+                    // 播放爆炸音效（使用网络链接）
+                    const boomClone = boomSound.cloneNode(true);
+                    boomClone.volume = 0.6;
+                    boomClone.play().catch(err => {
+                        // 降级
+                        boomSound.currentTime = 0;
+                        boomSound.volume = 0.6;
+                        boomSound.play().catch(e => console.warn('爆炸音效失败', e));
+                    });
+                    
+                    boomClone.addEventListener('ended', () => boomClone.remove());
+                    setTimeout(() => boomClone.remove(), 10000);
+                }, 1500);
             }
 
-            // --- 爆炸效果：生成大量彩色粒子 ---
             function explode(centerX, centerY) {
-                const particleCount = 120;  // 粒子数量多一些更绚烂
+                const particleCount = 120;
                 for (let i = 0; i < particleCount; i++) {
-                    // 随机角度和速度，制造蓬松感
                     const angle = Math.random() * Math.PI * 2;
-                    const velocity = 80 + Math.random() * 200;  // 80~280px
+                    const velocity = 80 + Math.random() * 200;
                     const tx = Math.cos(angle) * velocity * (0.5 + Math.random() * 0.5);
                     const ty = Math.sin(angle) * velocity * (0.5 + Math.random() * 0.5);
 
@@ -299,30 +289,26 @@
                     particle.style.background = colors[Math.floor(Math.random() * colors.length)];
                     particle.style.setProperty('--tx', tx + 'px');
                     particle.style.setProperty('--ty', ty + 'px');
-                    // 随机大小
                     const size = 3 + Math.floor(Math.random() * 4);
                     particle.style.width = size + 'px';
                     particle.style.height = size + 'px';
                     
                     document.body.appendChild(particle);
 
-                    // 动画结束后移除粒子
                     setTimeout(() => {
                         if (particle.parentNode) particle.remove();
                     }, 1500);
                 }
             }
 
-            // --- 生成表白气泡（围绕屏幕中心散开）---
             function createBubbles() {
-                // 6个方向偏移量 (tx, ty)
                 const positions = [
-                    {tx: -220, ty: -150},  // 左上
-                    {tx: 220, ty: -150},   // 右上
-                    {tx: 0, ty: -250},     // 上中
-                    {tx: -180, ty: 150},   // 左下
-                    {tx: 180, ty: 150},    // 右下
-                    {tx: 0, ty: 220}       // 下中
+                    {tx: -220, ty: -150},
+                    {tx: 220, ty: -150},
+                    {tx: 0, ty: -250},
+                    {tx: -180, ty: 150},
+                    {tx: 180, ty: 150},
+                    {tx: 0, ty: 220}
                 ];
 
                 messages.forEach((msg, index) => {
@@ -334,25 +320,21 @@
                     const pos = positions[index % positions.length];
                     bubble.style.setProperty('--tx', pos.tx + 'px');
                     bubble.style.setProperty('--ty', pos.ty + 'px');
-                    bubble.style.animationDelay = (index * 0.4) + 's';  // 逐个出现
+                    bubble.style.animationDelay = (index * 0.4) + 's';
                     document.body.appendChild(bubble);
 
-                    // 10秒后自动移除气泡（避免堆积）
                     setTimeout(() => {
                         if (bubble.parentNode) bubble.remove();
                     }, 10000);
                 });
             }
 
-            // 窗口大小改变时，重新计算位置可能没必要，但保持烟花在可视区内
-            // 预留一些清理工作：防止残留粒子过多（但我们已经用setTimeout移除了）
-
-            // 可选：页面关闭前停止所有音效
+            // 页面关闭前释放临时URL
             window.addEventListener('beforeunload', function() {
-                bgMusic.pause();
-                boomSound.pause();
+                if (musicUrl) {
+                    URL.revokeObjectURL(musicUrl);
+                }
             });
-
         })();
     </script>
 </body>
