@@ -1,0 +1,88 @@
+<!<!<!DOCTYPE html>
+<超文本标记语言 超文本标记语言="zh-CN">
+<朗>
+    <头 元数据="UTF-8">
+    <字符集 元数据="viewport" 名字=内容宽度=设备宽度，初始缩放比例=1.0
+    <标题>给你的小惊喜</标题>
+    <风格>
+* {
+外边距：0；
+内边距：0；
+盒模型尺寸计算方式：内容、内边距和边框的总和决定元素的尺寸。
+        }
+正文{/*此处为*
+background: #ffeff5;
+字体-家族：“微软雅黑”，无衬线；
+显示：弹性布局；
+文本内容居中对齐；
+align-物品：你；
+最小高度：100 像素视口高度；
+内边距：20 像素；
+        }
+.start-btn {
+background: #ff5e97;
+颜色：白色；
+边框：无；
+衬垫：15px 35px；
+边界-半径：50px；
+字体大小:18px；
+光标：指针；
+box-shadow: 0 5px 15px rgba(255,94,151,0.3);
+过渡：0.3秒；
+        }
+.start-btn:hover {
+变换：刻度（1.08）；
+        }
+.box {
+显示：无；
+最大宽度：600px；
+背景：白色；
+填充物：30px；
+边界-半径：20px；
+盒阴影：0 10 像素 30 像素 rgba(0，0，0，0.1)；
+直线-高度：1.8；
+字体大小:16px；
+颜色：#33
+文本对齐方式：左对齐；
+animation: fadeIn 1s;
+        }
+.box h2 {
+color: #ff5e97;
+边缘-底部：15px；
+文本对齐方式：居中；
+        }
+.box p {
+边缘-底部：12px；
+        }
+@keyframes fadeIn {
+from { opacity: 0; transform: translateY(30px); }
+到{不透明度：1；变换：translateY（0）；}
+        }
+    </风格>
+头
+<身体>
+
+    <按钮 班级="start-btn" 身份证="startBtn">点我，有惊喜 💌</按钮>
+
+    <级 班级="box" 身份证="msgBox">
+        <h2>我想对你说</h2>
+        <P>其实我喜欢你很久了。</P>
+        <P>不是一时兴起，是认真的、慢慢的、越来越深的喜欢。</P>
+        <P>我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。</P>
+        <P>和你在一起的时候，我会觉得世界都变得温柔了。</P>
+        <P>我不敢说我能给你全世界，但我可以保证，我的全世界都可以是你。</P>
+        <P>你不用多好，我喜欢就好。</P>
+        <P>我没有很多情话，只想对你说：</P>
+        <P><强大的>我喜欢你，想和你一直在一起。</强大的></P>
+    </级>
+
+    <剧本>
+const btn = document.getElementById('startBtn');
+const box = document.getElementById('msgBox');
+btn.addEventListener('click', function(){
+btn.style.display = 'none';
+box.style.display = 'block';
+        });
+    </剧本>
+</身体>
+超文本标记语言
