@@ -55,7 +55,14 @@
                 transform: translate(var(--tx), var(--ty));
             }
         }
-        .start-btn {
+        /* 按钮样式 */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 10;
+        }
+        .start-btn, .sound-btn {
             background: linear-gradient(135deg, #ff5e97, #ff9a8b);
             color: white;
             border: none;
@@ -65,48 +72,42 @@
             cursor: pointer;
             box-shadow: 0 8px 20px rgba(255, 94, 151, 0.4);
             transition: 0.3s;
-            z-index: 10;
         }
-        .start-btn:hover {
+        .start-btn:hover, .sound-btn:hover {
             transform: scale(1.1);
             box-shadow: 0 12px 25px rgba(255, 94, 151, 0.5);
         }
-        .box {
-            display: none;
-            max-width: 650px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 40px;
-            border-radius: 25px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-            line-height: 2;
+        .sound-btn {
+            background: linear-gradient(135deg, #4facfe, #00f2fe);
+        }
+        /* 文字气泡 */
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 20px;
             font-size: 18px;
             color: #2d2d2d;
-            text-align: left;
-            animation: fadeIn 1.2s;
-            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            animation: bubble-float 2s ease-out forwards;
         }
-        .box h2 {
-            color: #ff5e97;
-            margin-bottom: 20px;
-            text-align: center;
-            font-size: 26px;
-        }
-        .box p {
-            margin-bottom: 15px;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes bubble-float {
+            0% {
+                opacity: 0;
+                transform: translate(0, 0) scale(0.5);
+            }
+            100% {
+                opacity: 1;
+                transform: translate(var(--tx), var(--ty)) scale(1);
+            }
         }
     </style>
 </head>
 <body>
-    <button class="start-btn" id="startBtn">点这里，有惊喜 💌</button>
-    <div class="box" id="msgBox">
-        <h2>我想对你说</h2>
-        <p>其实我喜欢你很久了。</p>
-        <p>不是一时兴起，是认真的、慢慢的、越来越深的喜欢。</p>
-        <p>我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。</p>
+    <div class="btn-group">
+        <button class="sound-btn" id="soundBtn">🎵 开启声音</button>
+        <button class="start-btn" id="startBtn">💌 点我，有惊喜</button>
     </div>
 
     <!-- 背景音乐 -->
@@ -120,17 +121,40 @@
 
     <script>
         const startBtn = document.getElementById('startBtn');
-        const msgBox = document.getElementById('msgBox');
+        const soundBtn = document.getElementById('soundBtn');
         const bgMusic = document.getElementById('bgMusic');
         const boomSound = document.getElementById('boomSound');
         const colors = ['#ff5e97', '#ffd700', '#00ffff', '#ff6347', '#32cd32', '#ff69b4', '#ff4500', '#9400d3'];
+        const messages = [
+            "其实我喜欢你很久了。",
+            "不是一时兴起，是认真的、慢慢的、越来越深的喜欢。",
+            "我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。"
+        ];
+        let soundEnabled = false;
 
+        // 开启声音按钮
+        soundBtn.addEventListener('click', function() {
+            soundEnabled = true;
+            this.textContent = '✅ 声音已开启';
+            this.disabled = true;
+            this.style.opacity = '0.7';
+            // 预加载音频
+            bgMusic.load();
+            boomSound.load();
+        });
+
+        // 主惊喜按钮
         startBtn.addEventListener('click', function() {
             this.style.display = 'none';
-            msgBox.style.display = 'block';
+            soundBtn.style.display = 'none';
 
-            // 播放音乐
-            bgMusic.play().catch(err => console.log('音乐播放需要用户交互', err));
+            // 播放音乐（如果已开启声音）
+            if (soundEnabled) {
+                bgMusic.play().catch(err => console.log('音乐播放失败', err));
+            }
+
+            // 生成文字气泡
+            createBubbles();
 
             // 开始烟花循环
             setInterval(() => {
@@ -159,9 +183,11 @@
             setTimeout(() => {
                 trail.remove();
                 explode(explodeX, explodeY);
-                // 播放爆炸音效
-                boomSound.currentTime = 0;
-                boomSound.play().catch(err => {});
+                // 播放爆炸音效（如果已开启声音）
+                if (soundEnabled) {
+                    boomSound.currentTime = 0;
+                    boomSound.play().catch(err => {});
+                }
             }, 1500);
         }
 
@@ -188,6 +214,32 @@
                     particle.remove();
                 }, 1500);
             }
+        }
+
+        // 生成文字气泡
+        function createBubbles() {
+            const positions = [
+                {tx: -200, ty: -100}, // 左上
+                {tx: 200, ty: -100},  // 右上
+                {tx: 0, ty: -200},    // 上中
+                {tx: -150, ty: 100},  // 左下
+                {tx: 150, ty: 100},   // 右下
+                {tx: 0, ty: 200}      // 下中
+            ];
+
+            messages.forEach((msg, index) => {
+                const bubble = document.createElement('div');
+                bubble.classList.add('bubble');
+                bubble.textContent = msg;
+                bubble.style.left = '50%';
+                bubble.style.top = '50%';
+                bubble.style.transform = 'translate(-50%, -50%)';
+                const pos = positions[index % positions.length];
+                bubble.style.setProperty('--tx', pos.tx + 'px');
+                bubble.style.setProperty('--ty', pos.ty + 'px');
+                bubble.style.animationDelay = index * 0.3 + 's';
+                document.body.appendChild(bubble);
+            });
         }
     </script>
 </body>
