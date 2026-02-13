@@ -1,88 +1,153 @@
-<!<!<!DOCTYPE html>
-<超文本标记语言 超文本标记语言="zh-CN">
-<朗>
-    <头 元数据="UTF-8">
-    <字符集 元数据="viewport" 名字=内容宽度=设备宽度，初始缩放比例=1.0
-    <标题>给你的小惊喜</标题>
-    <风格>
-* {
-外边距：0；
-内边距：0；
-盒模型尺寸计算方式：内容、内边距和边框的总和决定元素的尺寸。
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给你的小惊喜</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-正文{/*此处为*
-background: #ffeff5;
-字体-家族：“微软雅黑”，无衬线；
-显示：弹性布局；
-文本内容居中对齐；
-align-物品：你；
-最小高度：100 像素视口高度；
-内边距：20 像素；
+        body {
+            background: linear-gradient(to bottom, #0a0e27, #1a1a2e);
+            font-family: "Microsoft Yahei", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
         }
-.start-btn {
-background: #ff5e97;
-颜色：白色；
-边框：无；
-衬垫：15px 35px；
-边界-半径：50px；
-字体大小:18px；
-光标：指针；
-box-shadow: 0 5px 15px rgba(255,94,151,0.3);
-过渡：0.3秒；
+        .firework {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1),
+                        0 0 0 8px rgba(255, 255, 255, 0.1),
+                        0 0 20px rgba(255, 255, 255, 1);
+            animation: firework-fade 1.5s linear forwards;
         }
-.start-btn:hover {
-变换：刻度（1.08）；
+        @keyframes firework-fade {
+            to {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
         }
-.box {
-显示：无；
-最大宽度：600px；
-背景：白色；
-填充物：30px；
-边界-半径：20px；
-盒阴影：0 10 像素 30 像素 rgba(0，0，0，0.1)；
-直线-高度：1.8；
-字体大小:16px；
-颜色：#33
-文本对齐方式：左对齐；
-animation: fadeIn 1s;
+        .start-btn {
+            background: linear-gradient(135deg, #ff5e97, #ff9a8b);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(255, 94, 151, 0.4);
+            transition: 0.3s;
+            z-index: 10;
         }
-.box h2 {
-color: #ff5e97;
-边缘-底部：15px；
-文本对齐方式：居中；
+        .start-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 25px rgba(255, 94, 151, 0.5);
         }
-.box p {
-边缘-底部：12px；
+        .box {
+            display: none;
+            max-width: 650px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 25px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            line-height: 2;
+            font-size: 18px;
+            color: #2d2d2d;
+            text-align: left;
+            animation: fadeIn 1.2s;
+            z-index: 10;
         }
-@keyframes fadeIn {
-from { opacity: 0; transform: translateY(30px); }
-到{不透明度：1；变换：translateY（0）；}
+        .box h2 {
+            color: #ff5e97;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 26px;
         }
-    </风格>
-头
-<身体>
-
-    <按钮 班级="start-btn" 身份证="startBtn">点我，有惊喜 💌</按钮>
-
-    <级 班级="box" 身份证="msgBox">
+        .box p {
+            margin-bottom: 15px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <button class="start-btn" id="startBtn">点我，有惊喜 💌</button>
+    <div class="box" id="msgBox">
         <h2>我想对你说</h2>
-        <P>其实我喜欢你很久了。</P>
-        <P>不是一时兴起，是认真的、慢慢的、越来越深的喜欢。</P>
-        <P>我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。</P>
-        <P>和你在一起的时候，我会觉得世界都变得温柔了。</P>
-        <P>我不敢说我能给你全世界，但我可以保证，我的全世界都可以是你。</P>
-        <P>你不用多好，我喜欢就好。</P>
-        <P>我没有很多情话，只想对你说：</P>
-        <P><强大的>我喜欢你，想和你一直在一起。</强大的></P>
-    </级>
+        <p>其实我喜欢你很久了。</p>
+        <p>不是一时兴起，是认真的、慢慢的、越来越深的喜欢。</p>
+        <p>我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。</p>
+    </div>
 
-    <剧本>
-const btn = document.getElementById('startBtn');
-const box = document.getElementById('msgBox');
-btn.addEventListener('click', function(){
-btn.style.display = 'none';
-box.style.display = 'block';
+    <!-- 背景音乐：《寂寞烟火》片段 -->
+    <audio id="bgMusic" loop>
+        <source src="https://music.163.com/song/media/outer/url?id=2070584048.mp3" type="audio/mpeg">
+    
+    <!-- 烟花爆炸音效 -->
+    <audio id="boomSound" preload="auto">
+        <source src="https://assets.mixkit.co/sfx/preview/mixkit-firework-explosion-2759.mp3" type="audio/mpeg">
+    
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const msgBox = document.getElementById('msgBox');
+        const bgMusic = document.getElementById('bgMusic');
+        const boomSound = document.getElementById('boomSound');
+
+        startBtn.addEventListener('click', function() {
+            this.style.display = 'none';
+            msgBox.style.display = 'block';
+
+            // 播放音乐，从 60 秒开始
+            bgMusic.currentTime = 60;
+            bgMusic.play().catch(err => console.log('音乐播放需要用户交互', err));
+
+            // 开始烟花动画
+            startFireworks();
         });
-    </剧本>
-</身体>
-超文本标记语言
+
+        // 烟花生成函数
+        function startFireworks() {
+            setInterval(() => {
+                const colors = ['#ff5e97', '#ffd700', '#00ffff', '#ff6347', '#32cd32', '#ff69b4'];
+                const x = Math.random() * window.innerWidth;
+                const y = Math.random() * window.innerHeight * 0.6;
+
+                // 播放爆炸音效
+                boomSound.currentTime = 0;
+                boomSound.play().catch(err => {});
+
+                // 创建烟花粒子
+                for (let i = 0; i < 80; i++) {
+                    const firework = document.createElement('div');
+                    firework.classList.add('firework');
+                    firework.style.left = x + 'px';
+                    firework.style.top = y + 'px';
+                    firework.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    firework.style.boxShadow = `0 0 0 4px rgba(255,255,255,0.1), 0 0 0 8px rgba(255,255,255,0.1), 0 0 20px ${firework.style.background}`;
+                    firework.style.transform = `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px)`;
+                    document.body.appendChild(firework);
+
+                    // 移除粒子
+                    setTimeout(() => {
+                        firework.remove();
+                    }, 1500);
+                }
+            }, 2500); // 每 2.5 秒放一次烟花
+        }
+    </script>
+</body>
+</html>
