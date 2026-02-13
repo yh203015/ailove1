@@ -21,21 +21,38 @@
             position: relative;
             overflow: hidden;
         }
-        .firework {
+        /* 烟花束（上升轨迹） */
+        .trail {
             position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #fff;
-            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1),
-                        0 0 0 8px rgba(255, 255, 255, 0.1),
-                        0 0 20px rgba(255, 255, 255, 1);
-            animation: firework-fade 1.5s linear forwards;
+            width: 2px;
+            height: 0;
+            background: linear-gradient(to top, transparent, #fff);
+            transform-origin: bottom center;
+            animation: trail-rise 1.5s ease-out forwards;
         }
-        @keyframes firework-fade {
+        @keyframes trail-rise {
             to {
-                transform: translateY(100vh);
+                height: 70vh;
                 opacity: 0;
+            }
+        }
+        /* 烟花爆炸粒子 */
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            opacity: 0;
+            animation: particle-explode 1.5s ease-out forwards;
+        }
+        @keyframes particle-explode {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--tx), var(--ty));
             }
         }
         .start-btn {
@@ -92,9 +109,9 @@
         <p>我喜欢看你笑，喜欢听你说话，喜欢和你待在一起的每一秒。</p>
     </div>
 
-    <!-- 背景音乐：《寂寞烟火》片段 -->
-    <audio id="bgMusic" loop>
-        <source src="https://music.163.com/song/media/outer/url?id=2070584048.mp3" type="audio/mpeg">
+    <!-- 背景音乐 -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6c1b9d2d27.mp3?filename=soft-piano-100124.mp3" type="audio/mpeg">
     
     <!-- 烟花爆炸音效 -->
     <audio id="boomSound" preload="auto">
@@ -106,47 +123,71 @@
         const msgBox = document.getElementById('msgBox');
         const bgMusic = document.getElementById('bgMusic');
         const boomSound = document.getElementById('boomSound');
+        const colors = ['#ff5e97', '#ffd700', '#00ffff', '#ff6347', '#32cd32', '#ff69b4', '#ff4500', '#9400d3'];
 
         startBtn.addEventListener('click', function() {
             this.style.display = 'none';
             msgBox.style.display = 'block';
 
-            // 播放音乐，从 60 秒开始
-            bgMusic.currentTime = 60;
+            // 播放音乐
             bgMusic.play().catch(err => console.log('音乐播放需要用户交互', err));
 
-            // 开始烟花动画
-            startFireworks();
+            // 开始烟花循环
+            setInterval(() => {
+                launchFirework();
+            }, 3000);
         });
 
-        // 烟花生成函数
-        function startFireworks() {
-            setInterval(() => {
-                const colors = ['#ff5e97', '#ffd700', '#00ffff', '#ff6347', '#32cd32', '#ff69b4'];
-                const x = Math.random() * window.innerWidth;
-                const y = Math.random() * window.innerHeight * 0.6;
+        // 发射烟花
+        function launchFirework() {
+            // 随机从左下角或右下角开始
+            const startX = Math.random() > 0.5 ? 50 : window.innerWidth - 50;
+            const startY = window.innerHeight - 20;
+            // 爆炸点在中上部
+            const explodeX = startX + (Math.random() - 0.5) * 400;
+            const explodeY = window.innerHeight * 0.3;
 
+            // 创建上升轨迹
+            const trail = document.createElement('div');
+            trail.classList.add('trail');
+            trail.style.left = startX + 'px';
+            trail.style.bottom = '20px';
+            trail.style.height = '0';
+            document.body.appendChild(trail);
+
+            // 轨迹上升结束后爆炸
+            setTimeout(() => {
+                trail.remove();
+                explode(explodeX, explodeY);
                 // 播放爆炸音效
                 boomSound.currentTime = 0;
                 boomSound.play().catch(err => {});
+            }, 1500);
+        }
 
-                // 创建烟花粒子
-                for (let i = 0; i < 80; i++) {
-                    const firework = document.createElement('div');
-                    firework.classList.add('firework');
-                    firework.style.left = x + 'px';
-                    firework.style.top = y + 'px';
-                    firework.style.background = colors[Math.floor(Math.random() * colors.length)];
-                    firework.style.boxShadow = `0 0 0 4px rgba(255,255,255,0.1), 0 0 0 8px rgba(255,255,255,0.1), 0 0 20px ${firework.style.background}`;
-                    firework.style.transform = `translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px)`;
-                    document.body.appendChild(firework);
+        // 爆炸效果
+        function explode(x, y) {
+            const particleCount = 100;
+            for (let i = 0; i < particleCount; i++) {
+                const angle = (Math.PI * 2 * i) / particleCount;
+                const velocity = 100 + Math.random() * 150;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
 
-                    // 移除粒子
-                    setTimeout(() => {
-                        firework.remove();
-                    }, 1500);
-                }
-            }, 2500); // 每 2.5 秒放一次烟花
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.setProperty('--tx', tx + 'px');
+                particle.style.setProperty('--ty', ty + 'px');
+                document.body.appendChild(particle);
+
+                // 移除粒子
+                setTimeout(() => {
+                    particle.remove();
+                }, 1500);
+            }
         }
     </script>
 </body>
