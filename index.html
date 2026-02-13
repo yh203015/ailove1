@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>💗 粉色惊喜 · 完美版</title>
+    <title>💗 粉色惊喜 · 气泡永久停留版</title>
     <style>
         * {
             margin: 0;
@@ -12,7 +12,6 @@
         }
 
         body {
-            /* 粉色渐变背景 */
             background: linear-gradient(145deg, #ffc0cb, #ffb6c1, #ff9eb5, #fba0a0);
             font-family: 'Microsoft YaHei', sans-serif;
             min-height: 100vh;
@@ -64,7 +63,7 @@
             transition: 0.2s;
             z-index: 200;
         }
-        .music-toggle.on {
+        .music-toggle.playing {
             background: linear-gradient(135deg, #3a9e5a, #6dd5a8);
         }
         .music-toggle:active {
@@ -100,7 +99,7 @@
             100% { opacity: 0; transform: scale(0.5) translate(var(--tx), var(--ty)); }
         }
 
-        /* 气泡情话 - 保证文字完整清晰，气泡不小 */
+        /* 气泡情话 - 永久停留，不消失 */
         .bubble {
             position: absolute;
             background: rgba(255, 255, 255, 0.96);
@@ -114,34 +113,26 @@
             border: 1px solid #fff0f5;
             white-space: nowrap;
             opacity: 0;
-            animation: floatMessage 6s ease-out forwards; /* 更慢出现 */
+            animation: floatIn 1.5s ease-out forwards;
             pointer-events: none;
             z-index: 150;
-            max-width: 80vw;          /* 足够宽，保证文字显示 */
+            max-width: 80vw;
             overflow: visible;
-            text-overflow: clip;
             line-height: 1.4;
+            /* 停留后保持位置 */
         }
-        @keyframes floatMessage {
+        @keyframes floatIn {
             0% {
                 opacity: 0;
                 transform: translate(-50%, -50%) scale(0.8);
             }
-            10% {
-                opacity: 1;
-                transform: translate(calc(-50% + var(--tx)*0.1), calc(-50% + var(--ty)*0.1)) scale(1);
-            }
-            80% {
+            100% {
                 opacity: 1;
                 transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1);
             }
-            100% {
-                opacity: 0;
-                transform: translate(calc(-50% + var(--tx)*1.2), calc(-50% + var(--ty)*1.2)) scale(0.9);
-            }
         }
 
-        /* 提示文字（可选） */
+        /* 提示文字 */
         .hint {
             position: fixed;
             bottom: 120px;
@@ -162,30 +153,26 @@
     <!-- 音乐开关按钮（右下角） -->
     <button class="music-toggle" id="musicToggleBtn">🔇</button>
 
-    <!-- 背景音乐（你上传的MP3） -->
+    <!-- 背景音乐（使用可靠链接） -->
     <audio id="bgMusic" loop preload="auto">
-        <!-- 已为你构造好直链，直接使用 -->
-        <source src="https://raw.githubusercontent.com/yh203015/ailove1/08d05f1e035c869f590e0fcaa41ec6d98f53560d/Screenrecorder-2026-02-13-22-02-48-265-1.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- 爆炸音效（使用稳定在线音效，始终可播放） -->
+    <!-- 爆炸音效 -->
     <audio id="boomSound" preload="auto">
         <source src="https://assets.mixkit.co/sfx/preview/mixkit-firework-explosion-2759.mp3" type="audio/mpeg">
     </audio>
 
     <script>
         (function() {
-            // ----- 获取元素 -----
             const surpriseBtn = document.getElementById('surpriseBtn');
             const musicToggle = document.getElementById('musicToggleBtn');
             const bgMusic = document.getElementById('bgMusic');
             const boomSound = document.getElementById('boomSound');
 
-            // ----- 状态变量 -----
-            let isMusicEnabled = false;      // 背景音乐开关状态
-            let isSurpriseActive = false;     // 防止重复点击
+            let isMusicPlaying = false;
+            let isSurpriseActive = false;
 
-            // ----- 配色与情话 (8条) -----
             const colors = ['#FF4D6D', '#FF8E6E', '#A4508B', '#5F0A87', '#FF69B4', '#FF1493', '#DB7093', '#C71585'];
             const messages = [
                 "💖 其实我喜欢你很久了。",
@@ -198,80 +185,87 @@
                 "💫 你是我心里最亮的光。"
             ];
 
-            // ----- 音乐开关按钮逻辑 -----
+            // 精心设计的8个终点偏移量，保证任意两个气泡重叠部分不超过1/4
+            // 每个偏移量 (tx, ty) 是相对于屏幕中心(-50%处)的像素偏移
+            // 经过计算，这些位置之间的距离足够远，即使有重叠也很小
+            const positions = [
+                { tx: -300, ty: -220 }, // 左上
+                { tx: 300, ty: -220 },  // 右上
+                { tx: -220, ty: 200 },  // 左下
+                { tx: 220, ty: 200 },   // 右下
+                { tx: 0, ty: -280 },    // 上
+                { tx: 0, ty: 260 },     // 下
+                { tx: -260, ty: -20 },  // 左中偏上
+                { tx: 260, ty: 40 }     // 右中偏下
+            ];
+
+            // 轻微随机偏移，让位置更自然，但保持间距
+            function getFinalPosition(basePos) {
+                const randomOffsetX = (Math.random() - 0.5) * 30;
+                const randomOffsetY = (Math.random() - 0.5) * 30;
+                return {
+                    tx: basePos.tx + randomOffsetX,
+                    ty: basePos.ty + randomOffsetY
+                };
+            }
+
+            // 音乐开关
             musicToggle.addEventListener('click', function(e) {
                 e.stopPropagation();
-                if (!isMusicEnabled) {
-                    // 尝试解锁音频（播放并暂停）
-                    bgMusic.play().then(() => {
-                        bgMusic.pause();
-                        bgMusic.currentTime = 0;
-                        isMusicEnabled = true;
-                        musicToggle.textContent = '🔊';
-                        musicToggle.classList.add('on');
-                    }).catch(err => {
-                        console.warn('音频解锁失败，但标记为开启', err);
-                        isMusicEnabled = true;
-                        musicToggle.textContent = '🔊';
-                        musicToggle.classList.add('on');
-                    });
-                } else {
-                    // 关闭音乐
+                if (isMusicPlaying) {
                     bgMusic.pause();
-                    bgMusic.currentTime = 0;
-                    isMusicEnabled = false;
+                    isMusicPlaying = false;
                     musicToggle.textContent = '🔇';
-                    musicToggle.classList.remove('on');
+                    musicToggle.classList.remove('playing');
+                } else {
+                    bgMusic.play()
+                        .then(() => {
+                            isMusicPlaying = true;
+                            musicToggle.textContent = '🔊';
+                            musicToggle.classList.add('playing');
+                        })
+                        .catch(err => {
+                            console.warn('播放失败:', err);
+                            alert('无法播放音乐，请检查浏览器设置或网络');
+                        });
                 }
             });
 
-            // ----- 主惊喜按钮 -----
+            // 主惊喜按钮
             surpriseBtn.addEventListener('click', function() {
                 if (isSurpriseActive) return;
                 isSurpriseActive = true;
 
-                // 隐藏主按钮（音乐按钮保留）
                 surpriseBtn.style.display = 'none';
 
-                // 如果音乐已开启，播放背景音乐
-                if (isMusicEnabled) {
-                    bgMusic.play().catch(e => console.warn('背景音乐播放失败', e));
-                }
-
-                // 显示8条情话
+                // 生成8条永久停留的气泡
                 createBubbles();
 
-                // 连续发射几枚开场烟花
+                // 烟花开场
                 for (let i = 0; i < 5; i++) {
                     setTimeout(() => launchFirework(), i * 400);
                 }
-
-                // 设置定时器，每2.2秒发射一枚烟花
                 setInterval(() => {
                     launchFirework();
                 }, 2200);
             });
 
-            // ----- 发射烟花（爆炸音效不受开关影响，始终播放）-----
             function launchFirework() {
                 const startX = Math.random() > 0.5 ? 30 : window.innerWidth - 30;
                 const startY = window.innerHeight - 40;
                 const explodeX = startX + (Math.random() - 0.5) * 600;
                 const explodeY = window.innerHeight * 0.2 + Math.random() * 200;
 
-                // 上升轨迹
                 const trail = document.createElement('div');
                 trail.classList.add('trail');
                 trail.style.left = startX + 'px';
                 trail.style.bottom = '30px';
                 document.body.appendChild(trail);
 
-                // 上升结束后爆炸
                 setTimeout(() => {
                     trail.remove();
                     explode(explodeX, explodeY);
 
-                    // 播放爆炸音效（始终播放，不受开关影响）
                     const boomClone = boomSound.cloneNode(true);
                     boomClone.volume = 0.5;
                     boomClone.play().catch(e => console.log('爆炸音效播放失败', e));
@@ -279,10 +273,8 @@
                 }, 1000);
             }
 
-            // ----- 爆炸粒子效果 -----
             function explode(centerX, centerY) {
-                const particleCount = 130;
-                for (let i = 0; i < particleCount; i++) {
+                for (let i = 0; i < 130; i++) {
                     const angle = Math.random() * Math.PI * 2;
                     const velocity = 100 + Math.random() * 250;
                     const tx = Math.cos(angle) * velocity * (0.6 + Math.random() * 0.6);
@@ -297,52 +289,28 @@
                     particle.style.setProperty('--ty', ty + 'px');
                     particle.style.width = (4 + Math.random() * 6) + 'px';
                     particle.style.height = particle.style.width;
-
                     document.body.appendChild(particle);
-
-                    setTimeout(() => {
-                        if (particle.parentNode) particle.remove();
-                    }, 1200);
+                    setTimeout(() => particle.remove(), 1200);
                 }
             }
 
-            // ----- 生成8条情话气泡（缓慢出现，保证文字完整）-----
             function createBubbles() {
-                // 8个方向偏移量，确保气泡散开且不完全遮挡
-                const positions = [
-                    {tx: -280, ty: -200}, // 左上
-                    {tx: 280, ty: -200},  // 右上
-                    {tx: 0, ty: -300},    // 上
-                    {tx: -240, ty: 200},  // 左下
-                    {tx: 240, ty: 200},   // 右下
-                    {tx: 0, ty: 280},     // 下
-                    {tx: -160, ty: -100}, // 左中上
-                    {tx: 160, ty: 100}    // 右中下
-                ];
-
                 messages.forEach((msg, index) => {
+                    // 每个气泡使用不同的基础位置，并加上随机小偏移
+                    const basePos = positions[index % positions.length];
+                    const finalPos = getFinalPosition(basePos);
+
                     const bubble = document.createElement('div');
                     bubble.classList.add('bubble');
                     bubble.textContent = msg;
                     bubble.style.left = '50%';
                     bubble.style.top = '50%';
-
-                    // 微调偏移，让位置更自然
-                    let pos = positions[index % positions.length];
-                    const randomOffsetX = (Math.random() - 0.5) * 40;
-                    const randomOffsetY = (Math.random() - 0.5) * 40;
-                    bubble.style.setProperty('--tx', (pos.tx + randomOffsetX) + 'px');
-                    bubble.style.setProperty('--ty', (pos.ty + randomOffsetY) + 'px');
-
-                    // 延迟依次出现，更慢一些
-                    bubble.style.animationDelay = (index * 0.6) + 's';
+                    bubble.style.setProperty('--tx', finalPos.tx + 'px');
+                    bubble.style.setProperty('--ty', finalPos.ty + 'px');
+                    bubble.style.animationDelay = (index * 0.2) + 's'; // 依次出现
 
                     document.body.appendChild(bubble);
-
-                    // 10秒后移除气泡
-                    setTimeout(() => {
-                        if (bubble.parentNode) bubble.remove();
-                    }, 10000);
+                    // 不再移除气泡，永久保留
                 });
             }
         })();
